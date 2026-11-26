@@ -1,0 +1,26 @@
+data:
+  train_path: data/raw/train.csv
+  later_path: data/raw/later.csv
+  holdout_path: data/raw/holdout_features.csv
+  cleaned_train_path: data/processed/cleaned_train.csv
+  target: pickup_eta_min
+
+features:
+  numerical:
+    - drivers_nearby
+    - distance_to_driver_km
+    - hour
+    - rain_mm
+    - surge
+    - road_closures
+
+  categorical:
+    - car_type
+    - zone
+
+cleaning:
+  sentinel_column: surge
+  sentinel_value: 9999
+  stuck_sensor_column: drivers_nearby
+  stuck_start_date: "2026-02-04"
+  stuck_end_date: "2026-02-20"
