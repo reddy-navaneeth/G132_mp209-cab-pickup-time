@@ -24,3 +24,17 @@ cleaning:
   stuck_sensor_column: drivers_nearby
   stuck_start_date: "2026-02-04"
   stuck_end_date: "2026-02-20"
+
+training:
+  validation_fraction: 0.2
+  cv_splits: 5
+  random_state: 42
+  tree_max_depth: 4
+  forest_max_depth: 8
+  forest_n_estimators: 100
+
+tracking:
+  experiment_name: mp209-pickup-eta
+  registered_model_name: mp209-pickup-eta
+  model_path: models/model.joblib
+  findings_path: reports/findings.yaml
