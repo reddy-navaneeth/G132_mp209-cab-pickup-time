@@ -1,35 +1,53 @@
+group_id: G132
+problem_id: MP209
 data_issues:
   leaking_column:
     present: false
     column: null
-
   unit_mixup:
     present: false
     column: null
     group_value: null
     factor: null
-
   sentinel_value:
     present: true
     column: surge
     value: 9999
     count: 49
-
   duplicate_rows:
     present: false
     count: null
-
   stuck_sensor:
     present: true
     column: drivers_nearby
-    start_date: "2026-02-04"
-    end_date: "2026-02-20"
-
+    start_date: '2026-02-04'
+    end_date: '2026-02-20'
   target_typos:
     present: false
     count: null
-
   spelling_variants:
     present: true
     column: car_type
     true_levels: 3
+tracking:
+  experiment_name: mp209-pickup-eta
+  best_run_id: 1292da9beeeb493386ab57564bd83e59
+  registered_model_name: mp209-pickup-eta
+  champion_version: 1
+monitoring:
+  psi:
+    drivers_nearby: null
+    distance_to_driver_km: null
+    hour: null
+    rain_mm: null
+    surge: null
+    road_closures: null
+  most_drifted_feature: null
+  mae_by_group:
+    Airport: null
+    Old City: null
+    Tech Park: null
+  worst_served_group: null
+  mae_v1_on_check: null
+  mae_v2_on_check: null
+  decision: null

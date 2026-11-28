@@ -1,108 +1,53 @@
+from pathlib import Path
+
 import pandas as pd
-import numpy as np
 import yaml
 
-with open("params.yaml", "r") as file:
-    config = yaml.safe_load(file)
 
-df = pd.read_csv(config["data"]["train_path"])
+def prepare_training_data(raw, settings):
+    """Identify corrupt readings and normalize car types without fitting statistics."""
+    data = raw.copy()
+    data["date"] = pd.to_datetime(data["date"])
 
-print("Original shape:", df.shape)
+    sentinel = settings["sentinel_column"]
+    data[sentinel] = data[sentinel].mask(data[sentinel].eq(settings["sentinel_value"]))
 
-# Handle sentinel values
-# The following operation converts invalid surge values into missing values:
-
-df["surge"] = df["surge"].replace(9999, np.nan)
-surge_median = df["surge"].median()
-print("Surge median:", surge_median)
-df["surge"] = df["surge"].fillna(surge_median)
-
-
-# Handle the stuck sensor
-df["date"] = pd.to_datetime(df["date"])
-
-print(
-    df.loc[
-        df["date"].between("2026-02-01", "2026-02-23")
-    ].groupby("date")["drivers_nearby"].agg(
-        ["min", "max", "count"]
+    stuck = settings["stuck_sensor_column"]
+    affected = data["date"].between(
+        settings["stuck_start_date"],
+        settings["stuck_end_date"],
     )
-)
+    data[stuck] = data[stuck].mask(affected)
+
+    data["car_type"] = (
+        data["car_type"]
+        .str.strip()
+        .str.lower()
+        .replace({"aut.": "auto", "min.": "mini", "sed.": "sedan"})
+    )
+    return data
 
 
-# ategorical cleaning
-
-df["car_type"] = df["car_type"].str.strip().str.lower()
-
-
-# Create a mask for the affected dates
-
-stuck_mask = df["date"].between(
-    "2026-02-04", "2026-02-20"
-)
-
-print("Stuck sensor affected rows:", stuck_mask.sum())
-
-# Create a mask for the affected dates
-drivers_median = df.loc[
-    ~stuck_mask, "drivers_nearby"
-].median()
-
-print("Drivers median:", drivers_median)
-
-# Replace the corrupted readings
-
-df.loc[stuck_mask, "drivers_nearby"] = int(
-    round(drivers_median)
-)
+def clean_training_data(prepared, settings):
+    """Fill corrupt readings using medians from the full training dataset."""
+    data = prepared.copy()
+    sentinel = settings["sentinel_column"]
+    stuck = settings["stuck_sensor_column"]
+    data[sentinel] = data[sentinel].fillna(data[sentinel].median())
+    data[stuck] = data[stuck].fillna(round(data[stuck].median())).astype("int64")
+    return data
 
 
+def main():
+    config = yaml.safe_load(Path("params.yaml").read_text())
+    raw = pd.read_csv(config["data"]["train_path"])
+    prepared = prepare_training_data(raw, config["cleaning"])
+    cleaned = clean_training_data(prepared, config["cleaning"])
+    output_path = Path(config["data"]["cleaned_train_path"])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    cleaned.to_csv(output_path, index=False)
+    print(f"Wrote {len(cleaned)} cleaned rows to {output_path}")
 
 
-# 
-# Fix spelling variants
-df["car_type"] = df["car_type"].str.strip().str.lower()
-car_mapping = {
-    "aut.": "auto",
-    "min.": "mini",
-    "sed.": "sedan"
-}
-
-df["car_type"] = df["car_type"].replace(car_mapping)
-
-print("\nCleaned car categories:")
-print(df["car_type"].value_counts())
-
-
-
-# Validate the cleaned dataset
-
-print("\n--- CLEANED DATA VALIDATION ---")
-
-print("Final shape:", df.shape)
-
-print("\nMissing values:")
-print(df.isnull().sum())
-
-print("\nRemaining sentinel values:")
-print((df["surge"] == 9999).sum())
-
-print("\nDuplicate rows:")
-print(df.duplicated().sum())
-
-print("\nUnique car categories:")
-print(df["car_type"].unique())
-
-print("\nCleaned statistical summary:")
-print(df.describe().to_string())
-
-
-
-
-# save the cleaned dataset 
-df.to_csv(
-    "data/processed/cleaned_train.csv",
-    index=False
-)
-
-print("\nCleaned dataset saved successfully.")
+if __name__ == "__main__":
+    main()
